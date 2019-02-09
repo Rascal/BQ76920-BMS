@@ -1,4 +1,3 @@
-
 #include <Wire.h> 
 #include <bq769x0.h>    // Library for Texas Instruments bq76920 battery management IC
 
@@ -7,14 +6,17 @@
 #define BMS_I2C_ADDRESS 0x18
 
 bq769x0 BMS(bq76920, BMS_I2C_ADDRESS);    // battery management system object
-const int ledPin =  13;      // the number of the LED pin
+const int ledPinRead =  13;      // the number of the LED pin
+const int ledPinBalance =  10;
 // Variables will change :
 int ledState = LOW;             // ledState used to set the LED
 // Generally, you should use "unsigned long" for variables that hold time
 // The value will quickly become too large for an int to store
 unsigned long previousMillis = 0;        // will store last time LED was updated
 // constants won't change :
-const long interval = 250;  
+const long interval = 250;
+int counter = 0; 
+int DiffCellVoltage = 0;
 
 void setup()
 {
@@ -27,12 +29,13 @@ void setup()
   BMS.setOvercurrentChargeProtection(20000, 200);  // delay in ms
   BMS.setOvercurrentDischargeProtection(20000, 320); // delay in ms
   BMS.setCellUndervoltageProtection(2900, 2); // delay in s
-  BMS.setCellOvervoltageProtection(4250, 2);  // delay in s
+  BMS.setCellOvervoltageProtection(4220, 2);  // delay in s
 
   BMS.setBalancingThresholds(0, 3650, 20);  // minIdleTime_min, minCellV_mV, maxVoltageDiff_mV
   BMS.setIdleCurrentThreshold(100);
   BMS.enableAutoBalancing();
-  pinMode(ledPin, OUTPUT);
+  pinMode(ledPinRead, OUTPUT);
+  pinMode(ledPinBalance, OUTPUT);
 }
 
 void loop()
@@ -42,12 +45,21 @@ void loop()
   {
     previousMillis = currentMillis;
     BMS.update();  // should be called at least every 250 ms
-    BMS.printRegisters();
+    //BMS.printRegisters();
     if (ledState == LOW)
       ledState = HIGH;
     else
       ledState = LOW;
-    digitalWrite(ledPin, ledState);
-    
+    digitalWrite(ledPinRead, ledState);
+    counter = counter+1;
+    if (counter == 5)
+    {
+      counter = 0;
+      DiffCellVoltage = BMS.getMaxCellVoltage() - BMS.getMinCellVoltage();
+      if (DiffCellVoltage < 20)
+      digitalWrite(ledPinBalance, LOW);
+      else
+      digitalWrite(ledPinBalance, HIGH);
+    }
   }
 }
