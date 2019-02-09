@@ -631,7 +631,7 @@ void bq769x0::updateTemperatures()
 
 void bq769x0::updateCurrent(bool ignoreCCReadyFlag)
 {
-  int adcVal = 0;
+  int16_t adcVal = 0;
   regSYS_STAT_t sys_stat;
   sys_stat.regByte = readRegister(SYS_STAT);
   
