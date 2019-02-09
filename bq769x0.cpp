@@ -92,9 +92,9 @@ int bq769x0::begin(byte alertPin, byte bootPin)
   // done before calling this method)
   if (bootPin >= 0)
   {
-    //pinMode(bootPin, OUTPUT);
-    //digitalWrite(bootPin, HIGH);
-    //delay(5);   // wait 5 ms for device to receive boot signal (datasheet: max. 2 ms)
+    pinMode(bootPin, OUTPUT);
+    digitalWrite(bootPin, HIGH);
+    delay(5);   // wait 5 ms for device to receive boot signal (datasheet: max. 2 ms)
     pinMode(bootPin, INPUT);     // don't disturb temperature measurement
     delay(10);  // wait for device to boot up completely (datasheet: max. 10 ms)
   }
@@ -133,8 +133,8 @@ int bq769x0::begin(byte alertPin, byte bootPin)
 
 int bq769x0::checkStatus()
 {
-   Serial.print("errorStatus: ");
-   Serial.println(errorStatus);
+  //  Serial.print("errorStatus: ");
+  //  Serial.println(errorStatus);
   if (alertInterruptFlag == false && errorStatus == 0) {
     return 0;
   }
@@ -226,9 +226,8 @@ int bq769x0::checkStatus()
     }
     
     return errorStatus;
-
+	
   }
-
 }
 
 //----------------------------------------------------------------------------
@@ -258,10 +257,10 @@ void bq769x0::shutdown()
 
 bool bq769x0::enableCharging()
 {
-  if (checkStatus() == 0) // &&
-   // cellVoltages[idCellMaxVoltage] < maxCellVoltage &&
-    //temperatures[0] < maxCellTempCharge &&
-    //temperatures[0] > minCellTempCharge)
+  if (checkStatus() == 0 &&
+    cellVoltages[idCellMaxVoltage] < maxCellVoltage &&
+    temperatures[0] < maxCellTempCharge &&
+    temperatures[0] > minCellTempCharge)
   {
     byte sys_ctrl2;
     sys_ctrl2 = readRegister(SYS_CTRL2);
@@ -280,17 +279,14 @@ bool bq769x0::enableCharging()
 
 bool bq769x0::enableDischarging()
 {
-  if (checkStatus() == 0)// &&
-    //cellVoltages[idCellMinVoltage] > minCellVoltage &&
-    //temperatures[0] < maxCellTempDischarge &&
-    //temperatures[0] > minCellTempDischarge)
+  if (checkStatus() == 0 &&
+    cellVoltages[idCellMinVoltage] > minCellVoltage &&
+    temperatures[0] < maxCellTempDischarge &&
+    temperatures[0] > minCellTempDischarge)
   {
     byte sys_ctrl2;
     sys_ctrl2 = readRegister(SYS_CTRL2);
     writeRegister(SYS_CTRL2, sys_ctrl2 | B00000010);  // switch DSG on
-    #if BQ769X0_DEBUG
-    Serial.println("Enabling DSG FET");
-    #endif
     return true;
   }
   else {
@@ -498,9 +494,6 @@ int bq769x0::setCellUndervoltageProtection(int voltage_mV, int delay_s)
   uv_trip += 1;   // always round up for lower cell voltage
   writeRegister(UV_TRIP, uv_trip);
   
-  Serial.println(voltage_mV);
-  Serial.println(uv_trip);
-
   protect3.bits.UV_DELAY = 0;
   for (int i = sizeof(UV_delay_setting)-1; i > 0; i--) {
     if (delay_s >= UV_delay_setting[i]) {
@@ -528,9 +521,6 @@ int bq769x0::setCellOvervoltageProtection(int voltage_mV, int delay_s)
   
   ov_trip = ((((long)voltage_mV - adcOffset) * 1000 / adcGain) >> 4) & 0x00FF;
   writeRegister(OV_TRIP, ov_trip);
-
-  Serial.println(voltage_mV);
-  Serial.println(ov_trip);
     
   protect3.bits.OV_DELAY = 0;
   for (int i = sizeof(OV_delay_setting)-1; i > 0; i--) {
@@ -566,6 +556,13 @@ int bq769x0::getBatteryVoltage()
 int bq769x0::getMaxCellVoltage()
 {
   return cellVoltages[idCellMaxVoltage];
+}
+
+//----------------------------------------------------------------------------
+
+int bq769x0::getMinCellVoltage()
+{
+  return cellVoltages[idCellMinVoltage];
 }
 
 //----------------------------------------------------------------------------
