@@ -156,4 +156,3 @@ class bq769x0 {
 };
 
 #endif // BQ769X0_H
-
